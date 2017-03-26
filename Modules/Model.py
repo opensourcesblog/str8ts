@@ -301,7 +301,6 @@ class Model:
         if not def_used:
             def_used = self.array_to_obj(self.possible_range,True)
 
-
         for value in arr_of_values[0]:
             if not used[value]:
                 copy_used = dict(used)
@@ -376,7 +375,16 @@ class Model:
             else:
                 arr_of_values.append(np.array(e['values']))
 
+        new_possible = [False]*len_values
+        new_knowledge = [False]*len_values
+
+        estimated_nof_streets = np.prod(np.array([len(x) for x in arr_of_values]))
+
+        if estimated_nof_streets > 10000:
+            return new_knowledge, values[:]
+
         streets, new_values, def_used = self.get_streets(arr_of_values)
+
         feasible_check = [x for x in new_values if len(x) > 0]
         if len(feasible_check) == 0:
             raise InfeasibleError("No street possible")
@@ -389,8 +397,7 @@ class Model:
 
         possible = range(low_possible,highest_possible+1)
 
-        new_possible = [False]*len_values
-        new_knowledge = [False]*len_values
+
         i = 0
         for entry in new_values:
             entry = list(entry)
