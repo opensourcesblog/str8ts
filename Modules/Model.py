@@ -72,9 +72,9 @@ class Model:
         candidate_list = [self.get_backtrack_candidates()]
         # while candidates in list
         while candidate_list:
-            candidate_enrty = candidate_list.pop(0)
-            cands = candidate_enrty['cands']
-            row, col = candidate_enrty['row'],candidate_enrty['col']
+            candidate_entry = candidate_list.pop(0)
+            cands = candidate_entry['cands']
+            row, col = candidate_entry['row'],candidate_entry['col']
             for cand in cands:
                 self.search_space = np.copy(copy_search_space)
                 self.search_space[row][col] = {'value':cand}
@@ -99,10 +99,10 @@ class Model:
                 print("Need to backtrack")
                 print("found %d values" % self.nof_found)
                 print("%d values are missing" % self.nof_missing)
-#                 feasible,counter = self.backtrack(idx)
-#                 print("Number of backtracks", counter)
-#                 if not feasible:
-#                     raise InfeasibleError("Infeasible checked backtracking")
+                feasible,counter = self.backtrack(idx)
+                print("Number of backtracks", counter)
+                if not feasible:
+                    raise InfeasibleError("Infeasible checked backtracking")
 
         except InfeasibleError as e:
             print(e)
@@ -442,18 +442,22 @@ class Model:
         estimated_nof_straights = np.prod(np.array([len(x) for x in arr_of_values]))
 
         if estimated_nof_straights > 10000:
-            return new_knowledge, values[:]
+            return new_knowledge, self.list2values_structure(arr_of_values)
 
-        straights, new_values, def_used = self.get_straights(arr_of_values)
 
-        if len(straights) == 0:
-            raise InfeasibleError("No straight possible")
 
         if 'links' in opts and len(opts['links']):
+            straights, new_values, def_used = self.get_straights(arr_of_values)
+
+            if len(straights) == 0:
+                raise InfeasibleError("No straight possible")
+
             true_keys = get_true_keys_in_dict(def_used)
             if len(true_keys):
                 for l in opts['links']:
                     self.check_constraint({'idx':self.subscribe_list_on[l],'against':set(true_keys)},"notInSet")
+        else:
+            return new_knowledge, self.list2values_structure(arr_of_values)
 
 
         # build up the new possible values and the new knowledge we have
