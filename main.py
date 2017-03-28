@@ -45,6 +45,9 @@ def print_search_space(grid_c,search_space):
         print("".join(matrix[r]))
 
 def parse_input(filename):
+    # input file line looks like
+    # 0! 5! 0. 0. 0. 0! 3. 0. 0!
+    # ! means black field . means white field 0 means blank
     grid = []
     grid_c = []
     with open('./data/'+filename) as f:
@@ -54,6 +57,7 @@ def parse_input(filename):
             grid_c_line = []
             for part in split_line:
                 grid_line.append(int(part[0]))
+                # ! means black => add a 1 in the color array
                 grid_c_line.append(1 if part[1] == "!" else 0)
             grid.append(grid_line)
             grid_c.append(grid_c_line)
@@ -61,6 +65,7 @@ def parse_input(filename):
     return grid, grid_c
 
 def main():
+    # parse the input file
     grid, grid_c = parse_input(sys.argv[1])
 
     grid = np.array(grid)
@@ -71,9 +76,10 @@ def main():
 
 
     model = Model()
+    # each entry can have the values 1-9 if currently set to 0
     model.build_search_space(grid,[1,2,3,4,5,6,7,8,9],0)
 
-    # per row
+    # per row each row should be different (each digit at most once)
     for r in range(len(grid)):
         idx = np.full(grid.shape, False, dtype=bool)
         idx[r,:] = True
@@ -81,16 +87,14 @@ def main():
         model.subscribe({'idx':idx},model.check_constraint,{'idx':idx},"alldifferent")
 
 
-    # per col
+    # per col each col should be different (each digit at most once)
     for c in range(len(grid[0])):
         idx = np.full(grid.shape, False, dtype=bool)
         idx[:,c] = True
         idx[np.where((grid_c[:,c]==1) & (grid[:,c]==0)),c] = False
         model.subscribe({'idx':idx},model.check_constraint,{'idx':idx},"alldifferent")
 
-
-
-    # find all streets
+    # find all streets (between black boxes)
     # per row
     for r in range(len(grid_c)):
         streets = []
@@ -129,7 +133,9 @@ def main():
             idx[street,c] = True
             model.subscribe({'idx':idx},model.check_constraint,{'idx':idx},"street")
 
+    # link the two constraints together
     model.link()
+    # solve only the white values (black fields should be still 9)
     model.solve(np.invert(grid_c),0)
     solution = model.get_solution()
 
