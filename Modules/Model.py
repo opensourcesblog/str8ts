@@ -156,14 +156,14 @@ class Model:
             on = self.subscribe_list_on[si]
             args = self.subscribe_list_func[si][1]
             func = args[1]
-            # if a part is a street and part of alldifferent
-            # get all other streets and link them together
-            # => the street constraints considers what to do with it
-            if func == "street":
+            # if a part is a straight and part of alldifferent
+            # get all other straights and link them together
+            # => the straight constraints considers what to do with it
+            if func == "straight":
                 temp_links = self.get_linked_idx(si,"alldifferent")
                 links = []
                 for t in temp_links:
-                    links.extend(self.get_linked_idx(t,"street"))
+                    links.extend(self.get_linked_idx(t,"straight"))
                 real_links = []
                 for l in links:
                     if not np.any(np.logical_and(self.subscribe_list_on[si],self.subscribe_list_on[l])):
@@ -299,13 +299,13 @@ class Model:
         return obj
 
 
-    def get_streets(self,arr_of_values,len_street=False,possible=False,used=False,
-                    used_pattern=False,all_streets=False,def_used=False):
+    def get_straights(self,arr_of_values,len_straight=False,possible=False,used=False,
+                    used_pattern=False,all_straights=False,def_used=False):
         """
-            get all streets for an array of values
+            get all straights for an array of values
             eg. [[4], [1, 2, 3, 5, 7, 8, 9], [1, 2, 5, 6, 8, 9], [1, 3, 5, 6, 8, 9], [2, 3, 5, 6, 7, 8, 9]]
-            return all_streets, new_values and definitely used values
-            all_streets: [[4, 1, 2, 3, 5], [4, 1, 2, 5, 3], ... [4, 8, 5, 6, 7], [4, 8, 6, 5, 7]]
+            return all_straights, new_values and definitely used values
+            all_straights: [[4, 1, 2, 3, 5], [4, 1, 2, 5, 3], ... [4, 8, 5, 6, 7], [4, 8, 6, 5, 7]]
             new_values: [{4}, {1, 2, 3, 5, 7, 8}, {8, 1, 2, 5, 6}, {8, 1, 3, 5, 6}, {2, 3, 5, 6, 7, 8}]
             def_used: {1: False, 2: False, 3: False, 4: True, 5: True, 6: False, 7: False, 8: False, 9: False}
         """
@@ -313,10 +313,10 @@ class Model:
             used = self.array_to_obj(self.possible_range,False)
         if not used_pattern:
             used_pattern = []
-        if not all_streets:
-            all_streets = []
-        if not len_street:
-            len_street = len(arr_of_values)
+        if not all_straights:
+            all_straights = []
+        if not len_straight:
+            len_straight = len(arr_of_values)
         if not possible:
             possible = [set() for x in range(len(arr_of_values))]
         if not def_used:
@@ -324,31 +324,31 @@ class Model:
             def_used = self.array_to_obj(self.possible_range,True)
 
         # take the first entry and iterate over the possible values
-        # for each build a new street (recursive)
+        # for each build a new straight (recursive)
         for value in arr_of_values[0]:
-            # only use this value if it's not already part of the street
+            # only use this value if it's not already part of the straight
             if not used[value]:
                 copy_used = dict(used)
                 copy_used[value] = True
 
                 # set all values which aren't possible anymore to used
-                # for ecample if the street has a length of 2 and one value is 2
+                # for example if the straight has a length of 2 and one value is 2
                 # only 1 and 3 are possible but not 2 and not 4-...
-                for i in range(self.lowest_value,max(self.lowest_value,value-len_street+1)):
+                for i in range(self.lowest_value,max(self.lowest_value,value-len_straight+1)):
                     copy_used[i] = True
-                for i in range(min(self.highest_value+1,value+len_street),self.highest_value+1):
+                for i in range(min(self.highest_value+1,value+len_straight),self.highest_value+1):
                     copy_used[i] = True
 
                 copy_used_pattern = used_pattern[:]
                 copy_used_pattern.append(value)
                 # if there are 2 or more values left
                 if len(arr_of_values) > 1:
-                    all_streets,possible,def_used = self.get_streets(arr_of_values[1:],len_street,possible,
-                                                            copy_used,copy_used_pattern,all_streets,def_used)
+                    all_straights,possible,def_used = self.get_straights(arr_of_values[1:],len_straight,possible,
+                                                            copy_used,copy_used_pattern,all_straights,def_used)
                 else:
-                    # add the used pattern to all the streets
-                    all_streets.append(copy_used_pattern)
-                    # check if there are values which are not used in the street
+                    # add the used pattern to all the straights
+                    all_straights.append(copy_used_pattern)
+                    # check if there are values which are not used in the straight
                     not_used = [x for x in self.possible_range if x not in copy_used_pattern]
                     for nu in not_used:
                         def_used[nu] = False
@@ -357,7 +357,7 @@ class Model:
                     for x in copy_used_pattern:
                         possible[xi].add(x)
                         xi += 1
-        return all_streets, possible, def_used
+        return all_straights, possible, def_used
 
     def list2values_structure(self,list_of_values):
         values_struct = []
@@ -368,14 +368,10 @@ class Model:
                 values_struct.append({'values':l})
         return values_struct
 
-    def get_definitly_used(self,lowest_possible,highest_possible,len_street):
-        return set(range(lowest_possible,highest_possible+1)[:len_street]) & set(range(lowest_possible,highest_possible+1)[-len_street:])
-
-
-    def street(self, ss_idx, values, opts):
+    def straight(self, ss_idx, values, opts):
         """
-            the street constraint
-            ss_idx: the indices where there has to be a street
+            the straight constraint
+            ss_idx: the indices where there has to be a straight
             values: the actual values on these indices
             opts: all options
         """
@@ -395,7 +391,6 @@ class Model:
                 if values[i]['value'] < fixed_min_val:
                     fixed_min_val = values[i]['value']
 
-        # if there is no fixed value use all the other values
         min_val = self.lowest_value
         max_val = self.highest_value
 
@@ -406,21 +401,24 @@ class Model:
             else:
                 c_min = values[i]['value']
                 c_max = values[i]['value']
-            if c_max > max_val:
-                max_val = c_max
-            if c_min < min_val:
-                min_val = min_val
+            if c_max+len_values-1 < max_val:
+                max_val = c_max+len_values-1
+            if c_min-len_values+1 > min_val:
+                min_val = c_min-len_values+1
+
 
         lowest_possible = min_val
         highest_possible = max_val
 
         if len(fixed_values):
             # if there is a fixed value we can determine the lowest possible and highest posssible
-            # by the length of the street
+            # by the length of the straight
             # example: min: 1 max: 3 length: 5 => values 1-5
             # max-length+1 until min+length-1  or lowest_value until highest_value as bounding
-            lowest_possible  = max(lowest_possible,max(fixed_max_val-len_values+1,self.lowest_value))
-            highest_possible = min(highest_possible,min(fixed_min_val+len_values-1,self.highest_value))
+            fixed_lowest_possible  = max(fixed_max_val-len_values+1,self.lowest_value)
+            lowest_possible = max(lowest_possible,fixed_lowest_possible)
+            fixed_highest_possible = min(fixed_min_val+len_values-1,self.highest_value)
+            highest_possible = min(highest_possible,fixed_highest_possible)
 
         # remove impossible
         # example: {1,3,4,6,7,8,9} and {1,3,4,6,7,8} there 1 isn't possible
@@ -441,31 +439,19 @@ class Model:
                     new_knowledge[i] = True
             i += 1
 
+        estimated_nof_straights = np.prod(np.array([len(x) for x in arr_of_values]))
 
-        easy_def_used = self.get_definitly_used(lowest_possible,highest_possible,len(arr_of_values))
-
-
-        estimated_nof_streets = np.prod(np.array([len(x) for x in arr_of_values]))
-
-        if estimated_nof_streets > 10000:
+        if estimated_nof_straights > 10000:
             return new_knowledge, values[:]
 
-        streets, new_values, def_used = self.get_streets(arr_of_values)
+        straights, new_values, def_used = self.get_straights(arr_of_values)
 
-        feasible_check = [x for x in new_values if len(x) > 0]
-        if len(feasible_check) == 0:
-            raise InfeasibleError("No street possible")
+        if len(straights) == 0:
+            raise InfeasibleError("No straight possible")
 
         if 'links' in opts and len(opts['links']):
             true_keys = get_true_keys_in_dict(def_used)
             if len(true_keys):
-                if easy_def_used != set(true_keys):
-                    print("Arr of values", arr_of_values)
-                    print("easy_def_used", easy_def_used)
-                    print("real def used", set(true_keys))
-                    print("lowest_possible", lowest_possible)
-                    print("highest_possible", highest_possible)
-
                 for l in opts['links']:
                     self.check_constraint({'idx':self.subscribe_list_on[l],'against':set(true_keys)},"notInSet")
 
@@ -553,8 +539,8 @@ class Model:
                 elif operator == "alldifferent":
                     new_knowledge, new_possible = self.alldifferent(ss_idx,values)
 
-                elif operator == "street":
-                    new_knowledge, new_possible = self.street(ss_idx,values,opts)
+                elif operator == "straight":
+                    new_knowledge, new_possible = self.straight(ss_idx,values,opts)
 
             except InfeasibleError as e:
                 raise e
@@ -565,6 +551,16 @@ class Model:
             self.changed = np.logical_or(self.changed,old_changed)
 
             self.search_space[ss_idx] = new_possible
+
+            # some constraints actually need a different constraint:
+            try:
+                # if we have a straight constraint we also have an alldifferent constraint
+                if operator == "straight":
+                    self.check_constraint(opts,"alldifferent")
+
+            except InfeasibleError as e:
+                raise e
+
 
     def get_solution(self):
         grid = [[0]*9 for i in range(9)]

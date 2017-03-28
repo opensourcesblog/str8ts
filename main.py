@@ -94,44 +94,44 @@ def main():
         idx[np.where((grid_c[:,c]==1) & (grid[:,c]==0)),c] = False
         model.subscribe({'idx':idx},model.check_constraint,{'idx':idx},"alldifferent")
 
-    # find all streets (between black boxes)
+    # find all straights (between black boxes)
     # per row
     for r in range(len(grid_c)):
-        streets = []
-        c_street = []
+        straights = []
+        c_straight = []
         for c in range(len(grid_c[r])):
             if grid_c[r][c]:
-                if len(c_street):
-                    streets.append(c_street)
-                    c_street = []
+                if len(c_straight):
+                    straights.append(c_straight)
+                    c_straight = []
             else:
-                c_street.append(c)
-        if len(c_street):
-            streets.append(c_street)
+                c_straight.append(c)
+        if len(c_straight):
+            straights.append(c_straight)
 
-        for street in streets:
+        for straight in straights:
             idx = np.full(grid.shape, False, dtype=bool)
-            idx[r,street] = True
-            model.subscribe({'idx':idx},model.check_constraint,{'idx':idx},"street")
+            idx[r,straight] = True
+            model.subscribe({'idx':idx},model.check_constraint,{'idx':idx},"straight")
 
     # per col
     for c in range(len(grid_c[0])):
-        streets = []
-        c_street = []
+        straights = []
+        c_straight = []
         for r in range(len(grid_c)):
             if grid_c[r][c]:
-                if len(c_street):
-                    streets.append(c_street)
-                    c_street = []
+                if len(c_straight):
+                    straights.append(c_straight)
+                    c_straight = []
             else:
-                c_street.append(r)
-        if len(c_street):
-            streets.append(c_street)
+                c_straight.append(r)
+        if len(c_straight):
+            straights.append(c_straight)
 
-        for street in streets:
+        for straight in straights:
             idx = np.full(grid.shape, False, dtype=bool)
-            idx[street,c] = True
-            model.subscribe({'idx':idx},model.check_constraint,{'idx':idx},"street")
+            idx[straight,c] = True
+            model.subscribe({'idx':idx},model.check_constraint,{'idx':idx},"straight")
 
     # link the two constraints together
     model.link()
