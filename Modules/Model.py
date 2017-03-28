@@ -406,10 +406,10 @@ class Model:
             else:
                 c_min = values[i]['value']
                 c_max = values[i]['value']
-            if c_max+len_values-1 < max_val:
-                max_val = c_max+len_values-1
-            if c_min-len_values+1 > min_val:
-                min_val = c_min-len_values+1
+            if c_max > max_val:
+                max_val = c_max
+            if c_min < min_val:
+                min_val = min_val
 
         lowest_possible = min_val
         highest_possible = max_val
@@ -442,20 +442,37 @@ class Model:
             i += 1
 
 
-        def_used = self.get_definitly_used(lowest_possible,highest_possible,len(arr_of_values))
+        easy_def_used = self.get_definitly_used(lowest_possible,highest_possible,len(arr_of_values))
 
 
-        # if we have to link this constraint to another one
-        # eg there are two streets in a line which is constraint by an all different constraint
-        # the definitely used numbers can't be used in the other street
+        estimated_nof_streets = np.prod(np.array([len(x) for x in arr_of_values]))
+
+        if estimated_nof_streets > 10000:
+            return new_knowledge, values[:]
+
+        streets, new_values, def_used = self.get_streets(arr_of_values)
+
+        feasible_check = [x for x in new_values if len(x) > 0]
+        if len(feasible_check) == 0:
+            raise InfeasibleError("No street possible")
+
         if 'links' in opts and len(opts['links']):
-            if len(def_used):
+            true_keys = get_true_keys_in_dict(def_used)
+            if len(true_keys):
+                if easy_def_used != set(true_keys):
+                    print("Arr of values", arr_of_values)
+                    print("easy_def_used", easy_def_used)
+                    print("real def used", set(true_keys))
+                    print("lowest_possible", lowest_possible)
+                    print("highest_possible", highest_possible)
+
                 for l in opts['links']:
-                    self.check_constraint({'idx':self.subscribe_list_on[l],'against':def_used},"notInSet")
+                    self.check_constraint({'idx':self.subscribe_list_on[l],'against':set(true_keys)},"notInSet")
+
 
         # build up the new possible values and the new knowledge we have
         i = 0
-        for entry in arr_of_values:
+        for entry in new_values:
             entry = list(entry)
             if len(entry) > 1:
                 if len(entry) < len(values[i]['values']):
